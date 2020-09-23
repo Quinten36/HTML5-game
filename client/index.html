@@ -1,5 +1,11 @@
 <canvas id="ctx" width="500" height="500" style="border:1px solid #000000;"></canvas>
 
+<div id="chat-text" style="width:500px;height:100px;overflow-y:scroll"></div>
+
+<form id="chat-form">
+  <input id="chat-input" type="text" style="width: 500px;">
+</form>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
 <script>
 	var ctx = document.getElementById("ctx").getContext("2d");
