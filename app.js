@@ -55,9 +55,9 @@ var Player = function(id) {
 			self.spdX = 0;
 
 		if (self.pressingUp)
-			self.spdY = self.maxSpd;
-		else if (self.pressingDown)
 			self.spdY = -self.maxSpd;
+		else if (self.pressingDown)
+			self.spdY = self.maxSpd;
 		else
 			self.spdY = 0;
 	}
@@ -103,6 +103,7 @@ io.sockets.on('connection', function(socket) {
 	socket.id = Math.random();
 	SOCKET_LIST[socket.id] = socket;
 
+	Player.onConnect(socket);
 	socket.on('disconnect',function(){
 		delete SOCKET_LIST[socket.id];
 		Player.onDisconnect(socket);
@@ -117,7 +118,7 @@ io.sockets.on('connection', function(socket) {
 
 setInterval(function(){
 	var pack = Player.update();
-	
+
 	for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
 		socket.emit('newPositions',pack);
