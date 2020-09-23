@@ -97,6 +97,41 @@ Player.update = function() {
 	return pack;
 }
 
+var Bullet = function(angle) {
+  var self = Entity();
+  self.id = Math.random();
+  self.spdX = Math.cos(angle/180+Math.PI) *10;
+  self.spdY = Math.sin(angle/180+Math.PI) *10;
+
+  self.timer = 0;
+  self.toRemove = false;
+  var super_update = self.update;
+  self.update = function() {
+    if (self.timer++ > 100)
+      self.toRemove = true;
+    super_update();
+  }
+  Bullet.list[self.id] = self;
+  return self;
+}
+Bullet.list = {};
+
+Bullet.update = function() {
+  if (Math.random() < 0.1) {
+    Bullet(Math.random() * 360);
+  }
+
+	var pack = [];
+	for(var i in Bullet.list){
+		var bullet = Bullet.list[i];
+		bullet.update();
+		pack.push({
+			x:bullet.x,
+			y:bullet.y,
+		});		
+	}
+	return pack;
+}
 
 var io = require('socket.io') (serv, {});
 io.sockets.on('connection', function(socket) {
@@ -104,6 +139,7 @@ io.sockets.on('connection', function(socket) {
 	SOCKET_LIST[socket.id] = socket;
 
 	Player.onConnect(socket);
+
 	socket.on('disconnect',function(){
 		delete SOCKET_LIST[socket.id];
 		Player.onDisconnect(socket);
@@ -117,11 +153,18 @@ io.sockets.on('connection', function(socket) {
 });
 
 setInterval(function(){
+<<<<<<< HEAD
 	var pack = Player.update();
 
+=======
+  var pack = {
+    player: Player.update(),
+    bullet: Bullet.update()
+  }
+	
+>>>>>>> f6e6c6444d4ef0b6f4a8f0d58953433d125cd1b0
 	for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
 		socket.emit('newPositions',pack);
 	}
- 
 },1000/25);
