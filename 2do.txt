@@ -1,1 +1,9 @@
 zorgen dat scherm groter wordt en dat je met oa angle dat die relative aan het scherm wordt gehangen
+by wrong loging:
+    //verbeteren naar betere melding
+
+bullet position fixen
+
+sign up fixen
+    message van ben ingelogd
+    miss ook dirct inloggen

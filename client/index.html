@@ -1,20 +1,60 @@
-<canvas id="ctx" width="500" height="500" style="border:1px solid #000000;"></canvas>
+<div id="signDiv">
+	<label for="signDiv-username">Username:</label><input type="text" id="signDiv-username"><br>
+	<label for="signDiv-password">Password:</label><input type="password" id="signDiv-password">
+	<button id="signDiv-signIn">Sign in</button>
+	<button id="signDiv-signUp">Sign up</button>
+</div>
 
-<div id="chat-text" style="width:500px;height:100px;overflow-y:scroll"></div>
+<div id="gameDiv" style="display: none;">
+	<canvas id="ctx" width="500" height="500" style="border:1px solid #000000;"></canvas>
 
-<form id="chat-form">
-  <input id="chat-input" type="text" style="width: 500px;">
-</form>
+	<div id="chat-text" style="width:500px;height:100px;overflow-y:scroll"></div>
+
+	<form id="chat-form">
+	<input id="chat-input" type="text" style="width: 500px;">
+	</form>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
 <script>
+	var socket = io();
+
+	//sign
+	var signDiv = document.getElementById('signDiv')
+	var signDivUsername = document.getElementById('signDiv-username');
+	var signDivSignIn = document.getElementById('signDiv-signIn');
+	var signDivSignUp = document.getElementById('signDiv-signUp');
+	var signDivPassword = document.getElementById('signDiv-password');
+
+	signDivSignIn.onclick = function() {
+		socket.emit('signIn',{username :signDivUsername.value, password: signDivPassword.value});
+  }
+  signDivSignUp.onclick = function() {
+		socket.emit('signUp',{username :signDivUsername.value, password: signDivPassword.value});
+  }
+  
+	socket.on('signInResponse', function(data) {
+		if (data.success) {
+			signDiv.style.display = 'none';
+			gameDiv.style.display = 'inline-block';
+		} else 
+			alert('Signing in was unsuccessfull');
+  })
+  socket.on('signUpResponse', function(data) {
+		if (data.success) {
+			alert('Signing up was successfull');
+		} else 
+			alert('Signing up was unsuccessfull');
+			//verbeteren naar betere melding
+	})
+
+	//game
+
 	var chatText = document.getElementById('chat-text');
 	var chatInput = document.getElementById('chat-input');
 	var chatForm = document.getElementById('chat-form');
 	var ctx = document.getElementById("ctx").getContext("2d");
 	ctx.font = '30px Arial';
- 
-	var socket = io();
  
 	socket.on('newPositions',function(data){
 		ctx.clearRect(0,0,500,500);
