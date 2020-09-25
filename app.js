@@ -133,6 +133,9 @@ Bullet.update = function() {
 	return pack;
 }
 
+//ste to false on live server
+var DEBUG = true;
+
 var io = require('socket.io') (serv, {});
 io.sockets.on('connection', function(socket) {
 	socket.id = Math.random();
@@ -144,12 +147,26 @@ io.sockets.on('connection', function(socket) {
 		delete SOCKET_LIST[socket.id];
 		Player.onDisconnect(socket);
 	});
-	
-    console.log('socket connection');
 
-    socket.on('happy', function(data){
-        console.log(data.reason);
-    })
+	socket.on('sendMsgToServer',function(data){
+		var playerName = (""+socket.id).slice(2,7);
+		for(var i in SOCKET_LIST) {
+			SOCKET_LIST[i].emit('addToChat', playerName + ': ' + data);
+		}
+  });
+  
+  socket.on('evalServer',function(data){
+    if (!DEBUG)
+      return;
+    var res = eval(data);
+    socket.emit('evalAnswer', res);
+	});
+	
+  console.log('socket connection');
+
+  socket.on('happy', function(data){
+      console.log(data.reason);
+  })
 });
 
 setInterval(function(){
