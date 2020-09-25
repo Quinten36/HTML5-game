@@ -153,16 +153,11 @@ io.sockets.on('connection', function(socket) {
 });
 
 setInterval(function(){
-<<<<<<< HEAD
-	var pack = Player.update();
-
-=======
   var pack = {
     player: Player.update(),
     bullet: Bullet.update()
   }
 	
->>>>>>> f6e6c6444d4ef0b6f4a8f0d58953433d125cd1b0
 	for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
 		socket.emit('newPositions',pack);
