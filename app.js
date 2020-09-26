@@ -171,16 +171,27 @@ var USERS = {
 }
 
 var isValidPassword = function(data,cb) {
-  cb(USERS[data.username] === data.password);
+	db.account.find({username:data.username,password:data.password}, function (err,res) {
+		if (res.length > 0)
+			cb(true);
+		else
+			cb(false);
+	})
 }
 
 var doesUsernameExist = function(data,cb) {
-  cb(USERS[data.username]);
+  db.account.find({username:data.username}, function (err,res) {
+		if (res.length > 0)
+			cb(true);
+		else
+			cb(false);
+	})
 }
 
 var addUser = function(data,cb) {
-  USERS[data.username] = data.password;
-  cb();
+  db.account.insert({username:data.username,password:data.password}, function (err) {
+		cb();
+	});
 }
 
 var io = require('socket.io')(serv,{});
