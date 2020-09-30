@@ -1,20 +1,20 @@
-var mongojs = require('mongojs');
+var mongojs = require("mongojs");
 var db = mongojs('localhost:27017/myGame', ['account','progress']);
 
 var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
- 
+
 app.get('/',function(req, res) {
 	res.sendFile(__dirname + '/client/index.html');
 });
 app.use('/client',express.static(__dirname + '/client'));
- 
+
 serv.listen(2000);
 console.log("Server started.");
- 
+
 var SOCKET_LIST = {};
- 
+
 var Entity = function(){
 	var self = {
 		x:250,
@@ -35,7 +35,7 @@ var Entity = function(){
 	}
 	return self;
 }
- 
+
 var Player = function(id){
 	var self = Entity();
 	self.id = id;
@@ -47,12 +47,12 @@ var Player = function(id){
 	self.pressingAttack = false;
 	self.mouseAngle = 0;
 	self.maxSpd = 10;
- 
+	
 	var super_update = self.update;
 	self.update = function(){
 		self.updateSpd();
 		super_update();
- 
+		
 		if(self.pressingAttack){
 			self.shootBullet(self.mouseAngle);
 		}
@@ -62,8 +62,7 @@ var Player = function(id){
 		b.x = self.x;
 		b.y = self.y;
 	}
- 
- 
+	
 	self.updateSpd = function(){
 		if(self.pressingRight)
 			self.spdX = self.maxSpd;
@@ -71,7 +70,7 @@ var Player = function(id){
 			self.spdX = -self.maxSpd;
 		else
 			self.spdX = 0;
- 
+		
 		if(self.pressingUp)
 			self.spdY = -self.maxSpd;
 		else if(self.pressingDown)
@@ -80,6 +79,13 @@ var Player = function(id){
 			self.spdY = 0;		
 	}
 	Player.list[id] = self;
+	
+	initPack.player.push({
+		id:self.id,
+		x:self.x,
+		y:self.y,	
+		number:self.number,	
+	});
 	return self;
 }
 Player.list = {};
@@ -102,6 +108,7 @@ Player.onConnect = function(socket){
 }
 Player.onDisconnect = function(socket){
 	delete Player.list[socket.id];
+	removePack.player.push(socket.id);
 }
 Player.update = function(){
 	var pack = [];
@@ -109,15 +116,15 @@ Player.update = function(){
 		var player = Player.list[i];
 		player.update();
 		pack.push({
+			id:player.id,
 			x:player.x,
 			y:player.y,
-			number:player.number
 		});		
 	}
 	return pack;
 }
- 
- 
+
+
 var Bullet = function(parent,angle){
 	var self = Entity();
 	self.id = Math.random();
@@ -131,7 +138,7 @@ var Bullet = function(parent,angle){
 		if(self.timer++ > 100)
 			self.toRemove = true;
 		super_update();
- 
+		
 		for(var i in Player.list){
 			var p = Player.list[i];
 			if(self.getDistance(p) < 32 && self.parent !== p.id){
@@ -141,55 +148,53 @@ var Bullet = function(parent,angle){
 		}
 	}
 	Bullet.list[self.id] = self;
+	initPack.bullet.push({
+		id:self.id,
+		x:self.x,
+		y:self.y,		
+	});
 	return self;
 }
 Bullet.list = {};
- 
+
 Bullet.update = function(){
 	var pack = [];
 	for(var i in Bullet.list){
 		var bullet = Bullet.list[i];
 		bullet.update();
-		if(bullet.toRemove)
+		if(bullet.toRemove){
 			delete Bullet.list[i];
-		else
+			removePack.bullet.push(bullet.id);
+		} else
 			pack.push({
+				id:bullet.id,
 				x:bullet.x,
 				y:bullet.y,
 			});		
 	}
 	return pack;
 }
- 
+
 var DEBUG = true;
- 
-var USERS = {
-  //users:password
-  // 'qq':'asd',
-  // 'q':'q',
-  // 'quinten':'admin',
-}
 
-var isValidPassword = function(data,cb) {
-	db.account.find({username:data.username,password:data.password}, function (err,res) {
-		if (res.length > 0)
+var isValidPassword = function(data,cb){
+	db.account.find({username:data.username,password:data.password},function(err,res){
+		if(res.length > 0)
 			cb(true);
 		else
 			cb(false);
-	})
+	});
 }
-
-var doesUsernameExist = function(data,cb) {
-  db.account.find({username:data.username}, function (err,res) {
-		if (res.length > 0)
+var isUsernameTaken = function(data,cb){
+	db.account.find({username:data.username},function(err,res){
+		if(res.length > 0)
 			cb(true);
 		else
 			cb(false);
-	})
+	});
 }
-
-var addUser = function(data,cb) {
-  db.account.insert({username:data.username,password:data.password}, function (err) {
+var addUser = function(data,cb){
+	db.account.insert({username:data.username,password:data.password},function(err){
 		cb();
 	});
 }
@@ -198,31 +203,30 @@ var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
 	socket.id = Math.random();
 	SOCKET_LIST[socket.id] = socket;
- 
-  socket.on('signIn',function(data){
-    isValidPassword(data, function(res) {
-      if (res) {
-        Player.onConnect(socket);
-        socket.emit('signInResponse',{success:true});
-      } else {
-        socket.emit('signInResponse',{success:false});
-      }
-    })
+	
+	socket.on('signIn',function(data){
+		isValidPassword(data,function(res){
+			if(res){
+				Player.onConnect(socket);
+				socket.emit('signInResponse',{success:true});
+			} else {
+				socket.emit('signInResponse',{success:false});			
+			}
+		});
 	});
- 
-  socket.on('signUp',function(data){
-    doesUsernameExist(data, function(res) {
-      if (res) {
-        // Player.onConnect(socket);
-        socket.emit('signUpResponse',{success:false});
-      } else {
-        addUser(data, function() {
-          socket.emit('signUpResponse',{success:true});
-        });
-      }
-    }) 
+	socket.on('signUp',function(data){
+		isUsernameTaken(data,function(res){
+			if(res){
+				socket.emit('signUpResponse',{success:false});		
+			} else {
+				addUser(data,function(){
+					socket.emit('signUpResponse',{success:true});					
+				});
+			}
+		});		
 	});
-
+	
+	
 	socket.on('disconnect',function(){
 		delete SOCKET_LIST[socket.id];
 		Player.onDisconnect(socket);
@@ -233,26 +237,47 @@ io.sockets.on('connection', function(socket){
 			SOCKET_LIST[i].emit('addToChat',playerName + ': ' + data);
 		}
 	});
- 
+	
 	socket.on('evalServer',function(data){
 		if(!DEBUG)
 			return;
 		var res = eval(data);
 		socket.emit('evalAnswer',res);		
 	});
- 
- 
- 
+	
+	
+	
 });
- 
+
+var initPack = {player:[],bullet:[]};
+var removePack = {player:[],bullet:[]};
+
+
 setInterval(function(){
 	var pack = {
 		player:Player.update(),
 		bullet:Bullet.update(),
 	}
- 
+	
 	for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
-		socket.emit('newPositions',pack);
+		socket.emit('init',initPack);
+		socket.emit('update',pack);
+		socket.emit('remove',removePack);
 	}
+	initPack.player = [];
+	initPack.bullet = [];
+	removePack.player = [];
+	removePack.bullet = [];
+	
 },1000/25);
+
+
+
+
+
+
+
+
+
+
