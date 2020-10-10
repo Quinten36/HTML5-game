@@ -7,3 +7,8 @@ bullet position fixen
 sign up fixen
     message van ben ingelogd
     miss ook dirct inloggen
+
+
+
+C:\Program Files\MongoDB\Server\4.4\bin
+voor db
